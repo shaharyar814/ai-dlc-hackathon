@@ -10,7 +10,8 @@
     "scan:secrets": "gitleaks dir . --config .gitleaks.toml --no-banner --redact --verbose && gitleaks git . --config .gitleaks.toml --no-banner --redact --verbose",
     "scan:sast": "semgrep scan --metrics=off --disable-version-check --error --quiet --config p/typescript --config p/react --config p/security-audit src index.html vite.config.ts",
     "check": "npm run lint && npm run scan:secrets && npm run scan:sast",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -28,6 +29,7 @@
     "globals": "^17.13.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
-    "vite": "^8.3.6"
+    "vite": "^8.3.6",
+    "vitest": "^5.1.1"
   }
 }

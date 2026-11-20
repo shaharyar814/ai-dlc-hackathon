@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import fc from 'fast-check'
 import { REVIEW_STORAGE_KEY } from '../config.ts'
 import { reviewKey } from '../rules/queue.ts'
 import { loadReviews, saveReview } from './reviews.ts'
@@ -114,5 +115,98 @@ describe('Review_Store', () => {
     const loaded = loadReviews(withRaw(raw))
     expect(loaded.size).toBe(1)
     expect(loaded.get(reviewKey('1', RULE))?.reviewedAt).toBe(T1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Property tests (fast-check)
+// ---------------------------------------------------------------------------
+
+const RUNS = { numRuns: 100 }
+const isoArb = fc.integer({ min: 0, max: 4_102_444_800_000 }).map((ms) => new Date(ms).toISOString())
+const idArb = fc.string({ minLength: 1, maxLength: 8 })
+
+describe('Review_Store properties', () => {
+  it('Feature: stalled-orders, Property 9: Review round trip', () => {
+    const arb = fc.uniqueArray(fc.record({ orderId: idArb, ruleId: idArb, reviewedAt: isoArb }), {
+      selector: (r) => reviewKey(r.orderId, r.ruleId),
+      maxLength: 10,
+    })
+    fc.assert(
+      fc.property(arb, (records) => {
+        const s = new FakeStorage()
+        for (const r of records) expect(saveReview(s, r.orderId, r.ruleId, r.reviewedAt).ok).toBe(true)
+        const loaded = loadReviews(s)
+        expect(loaded.size).toBe(records.length)
+        for (const r of records) expect(loaded.get(reviewKey(r.orderId, r.ruleId))).toEqual(r)
+      }),
+      RUNS,
+    )
+  })
+
+  it('Feature: stalled-orders, Property 10: A second review keeps the first', () => {
+    fc.assert(
+      fc.property(idArb, idArb, isoArb, isoArb, (orderId, ruleId, first, second) => {
+        const s = new FakeStorage()
+        saveReview(s, orderId, ruleId, first)
+        const result = saveReview(s, orderId, ruleId, second)
+        expect(result.ok).toBe(true)
+        expect(s.writes).toHaveLength(1)
+        const loaded = loadReviews(s)
+        expect(loaded.size).toBe(1)
+        expect(loaded.get(reviewKey(orderId, ruleId))?.reviewedAt).toBe(first)
+      }),
+      RUNS,
+    )
+  })
+
+  it('Feature: stalled-orders, Property 11: Bad storage never breaks loading', () => {
+    const storedArb = fc.oneof(
+      fc.string(),
+      fc.json(),
+      fc.array(fc.anything()).map((v) => JSON.stringify(v) ?? ''),
+      fc
+        .array(fc.record({ orderId: fc.anything(), ruleId: fc.anything(), reviewedAt: fc.anything() }))
+        .filter((a) => a.length > 0)
+        .map((v) => JSON.stringify(v) ?? ''),
+    )
+    fc.assert(
+      fc.property(storedArb, (raw) => {
+        expect(loadReviews(withRaw(raw)).size).toBe(0)
+      }),
+      RUNS,
+    )
+
+    const throwingGet: StorageLike = {
+      getItem: () => {
+        throw new Error('blocked')
+      },
+      setItem: () => undefined,
+    }
+    expect(loadReviews(throwingGet).size).toBe(0)
+    expect(loadReviews(null).size).toBe(0)
+
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(idArb, { maxLength: 5 }),
+        idArb,
+        isoArb,
+        (existing, newId, at) => {
+          const s = new FakeStorage()
+          for (const id of existing) saveReview(s, id, RULE, at)
+          const failing: StorageLike = {
+            getItem: (k) => s.getItem(k),
+            setItem: () => {
+              throw new Error('quota')
+            },
+          }
+          const before = loadReviews(s)
+          const result = saveReview(failing, `new-${newId}`, RULE, at)
+          expect(result.ok).toBe(false)
+          expect([...result.reviews.entries()]).toEqual([...before.entries()])
+        },
+      ),
+      RUNS,
+    )
   })
 })

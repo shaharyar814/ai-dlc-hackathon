@@ -24,6 +24,7 @@ describe('pure modules stay pure', () => {
     for (const expected of ['queue', 'timestamps', 'validateOrder', 'paidUnfulfilled']) {
       expect(names).toContain(`./${expected}.ts`)
     }
+    expect(names).toContain('../format.ts')
     expect(names.some((n) => n.endsWith('.test.ts'))).toBe(false)
   })
 

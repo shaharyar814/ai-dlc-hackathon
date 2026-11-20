@@ -4,7 +4,7 @@
 - React 19 and TypeScript (~6.0) on Vite 8, from the `react-ts` template. ESM (`"type": "module"`).
 - `@vitejs/plugin-react` for JSX.
 - Storage: browser local storage. No backend in Stage A.
-- Tests: Vitest (not installed yet; add it as a dev dependency when writing tests).
+- Tests: Vitest is installed. Four more dev dependencies were approved and installed with it: `fast-check` (property tests), `jsdom`, `@testing-library/react`, and `@testing-library/user-event` (component tests). Ask before adding any other dependency.
 - Lint: ESLint 10 flat config with `typescript-eslint` recommended, `react-hooks`, and `react-refresh`.
 
 ## Commands
@@ -12,7 +12,7 @@
 - `npm run build`: `tsc -b && vite build`.
 - `npm run lint`: `eslint .`.
 - `npm run preview`: serve the built app.
-- Tests, once added: `npx vitest --run` (single run, not watch mode).
+- `npm test -- --run`: run the tests once (not watch mode).
 
 ## Vite config notes (`vite.config.ts`)
 - `base` is `/absproxy/5173/` because the IDE proxy serves the app under that prefix. Reference public assets with that base in mind.

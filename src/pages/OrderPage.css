@@ -1,0 +1,29 @@
+.order-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.evidence-panel,
+.next-check {
+  background: var(--color-card);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-block: var(--space-4);
+}
+
+.progress {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  height: var(--space-3);
+  overflow: hidden;
+  margin-block-start: var(--space-2);
+}
+
+.progress-fill {
+  background: var(--color-accent);
+  height: 100%;
+  width: calc(var(--progress) * 100%);
+}

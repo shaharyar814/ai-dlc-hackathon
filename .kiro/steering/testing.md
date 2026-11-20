@@ -1,7 +1,7 @@
 # Testing
 
-- Test runner: Vitest. It is not installed yet. Ask before adding it to `package.json`.
-- Run tests as a single pass: `npx vitest --run`. Never use watch mode.
+- Test runner: Vitest. It is installed as a dev dependency.
+- Run tests as a single pass: `npm test -- --run` (the `test` script is `vitest`). Never use watch mode.
 - Test the rule as a pure function with the fixed evaluation time passed in. Never read the real clock in tests.
 - Use synthetic data only.
 - Tests live next to the code as `*.test.ts` or `*.test.tsx`.

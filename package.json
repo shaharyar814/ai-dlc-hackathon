@@ -11,7 +11,7 @@
     "scan:sast": "semgrep scan --metrics=off --disable-version-check --error --quiet --config p/typescript --config p/react --config p/security-audit src index.html vite.config.ts",
     "check": "npm run lint && npm run scan:secrets && npm run scan:sast",
     "preview": "vite preview",
-    "cdk": "cdk --app \"node infra/bin/app.ts\"",
+    "cdk": "cdk",
     "test": "vitest"
   },
   "dependencies": {

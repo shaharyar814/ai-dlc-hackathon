@@ -20,7 +20,7 @@ describe('Property 18: Sign-in preserves the route', () => {
         const redirect = new URL(browser.state.redirectedTo ?? '')
         expect(`${redirect.origin}${redirect.pathname}`).toBe('https://example.auth.us-east-1.amazoncognito.com/oauth2/authorize')
         expect(redirect.searchParams.get('response_type')).toBe('code')
-        expect(redirect.searchParams.get('scope')).toBe('fulfillment-watch/api')
+        expect(redirect.searchParams.get('scope')?.split(' ').sort()).toEqual(['fulfillment-watch/api', 'openid'])
         expect(redirect.searchParams.get('code_challenge_method')).toBe('S256')
         expect(redirect.searchParams.get('redirect_uri')).toBe(browser.state.origin)
         expect(redirect.searchParams.get('client_id')).toBe('client123')

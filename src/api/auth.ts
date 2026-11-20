@@ -3,7 +3,13 @@ import { createChallenge, createState, createVerifier, type CryptoLike } from '.
 export const TOKEN_KEY = 'fw.token'
 export const PKCE_KEY = 'fw.pkce'
 export const ROUTE_KEY = 'fw.route'
-export const SCOPE = 'fulfillment-watch/api'
+export const REQUIRED_SCOPE = 'fulfillment-watch/api'
+/**
+ * Scopes requested at sign-in. Cognito only puts the `cognito:groups` claim in the
+ * access token when `openid` is also requested (observed on the deployed pool,
+ * 2026-11-20), and the Lambda needs that claim for the group check.
+ */
+export const SCOPE = `openid ${REQUIRED_SCOPE}`
 export const EXPIRY_SKEW_MS = 30_000
 
 export interface SessionStorageLike {

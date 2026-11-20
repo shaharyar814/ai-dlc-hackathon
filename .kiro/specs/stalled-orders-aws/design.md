@@ -121,7 +121,7 @@ sequenceDiagram
   participant A as API
   U->>M: open /#/orders/1042
   M->>S: no valid token: save Saved_Route "#/orders/1042", state, PKCE verifier
-  M->>C: redirect /oauth2/authorize (code, S256 challenge, scope fulfillment-watch/api)
+  M->>C: redirect /oauth2/authorize (code, S256 challenge, scope openid fulfillment-watch/api)
   U->>C: sign in
   C->>M: redirect to origin ?code=...&state=...
   M->>S: read state, verifier, Saved_Route
@@ -276,7 +276,7 @@ function clearTokens(): void
 ```
 
 - Storage keys in `sessionStorage`: `fw.token` (access token and expiry), `fw.pkce` (verifier and state), `fw.route` (Saved_Route). None of these is a review entry (Requirement 8.7). No refresh token is requested or stored (Requirement 2.10).
-- The authorize request uses `response_type=code`, `client_id`, `redirect_uri=window.location.origin`, `scope=fulfillment-watch/api`, `state`, `code_challenge`, `code_challenge_method=S256`.
+- The authorize request uses `response_type=code`, `client_id`, `redirect_uri=window.location.origin`, `scope=openid fulfillment-watch/api` (Cognito adds `cognito:groups` to the access token only when `openid` is requested, observed on the deployed pool on 2026-11-20), `state`, `code_challenge`, `code_challenge_method=S256`.
 - The token request is a form-encoded `POST` to `<cognito domain>/oauth2/token` with `grant_type=authorization_code`, `client_id`, `code`, `redirect_uri`, `code_verifier`. No client secret exists.
 - `pkce.ts` generates a 64-character verifier from `crypto.getRandomValues` over the unreserved character set and computes `base64url(SHA-256(verifier))` with `crypto.subtle`. The crypto object is a parameter so tests can supply Node's.
 - The token expiry is the response `expires_in` added to the time of exchange, minus a 30-second skew. The expiry check uses `Date.now()` in `auth.ts` only. This is client session logic, not rule logic.

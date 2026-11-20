@@ -2,8 +2,10 @@ interface SignInMessageProps {
   kind: 'failed' | 'not-in-group'
   /** Restarts sign-in. Used by the "failed" message only. */
   onRestart?: () => void
+  /** API mode: lets a user signed in with the wrong account sign out. */
+  signOut?: { href: string; onSignOut: () => void }
 }
-export default function SignInMessage({ kind, onRestart }: SignInMessageProps) {
+export default function SignInMessage({ kind, onRestart, signOut }: SignInMessageProps) {
   if (kind === 'not-in-group') {
     return (
       <div>
@@ -11,6 +13,11 @@ export default function SignInMessage({ kind, onRestart }: SignInMessageProps) {
         <p role="alert">
           Your account is not in the fulfillment-lead group, so you cannot see this queue.
         </p>
+        {signOut && (
+          <a href={signOut.href} onClick={signOut.onSignOut}>
+            Sign out
+          </a>
+        )}
       </div>
     )
   }

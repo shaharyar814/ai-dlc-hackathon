@@ -36,7 +36,7 @@ function Shell({ signOut }: { signOut?: AppProps['signOut'] }) {
   if (status === 'forbidden') {
     return (
       <main>
-        <SignInMessage kind="not-in-group" />
+        <SignInMessage kind="not-in-group" signOut={signOut} />
       </main>
     )
   }

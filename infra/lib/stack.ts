@@ -1,5 +1,14 @@
-import { RemovalPolicy, Stack } from 'aws-cdk-lib'
+import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib'
 import type { StackProps } from 'aws-cdk-lib'
+import { CorsHttpMethod, HttpApi, HttpMethod, CfnStage } from 'aws-cdk-lib/aws-apigatewayv2'
+import { HttpJwtAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
+import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations'
+import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb'
+import { PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam'
+import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda'
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
+import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs'
+import { fileURLToPath } from 'node:url'
 import {
   CfnManagedLoginBranding,
   CfnUserPoolGroup,
@@ -10,7 +19,6 @@ import {
   UserPool,
   UserPoolClientIdentityProvider,
 } from 'aws-cdk-lib/aws-cognito'
-import { Duration } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
 
 export interface FulfillmentWatchStackProps extends StackProps {
@@ -83,5 +91,84 @@ export class FulfillmentWatchStack extends Stack {
       useCognitoProvidedValues: true,
     })
     branding.node.addDependency(domain)
+
+    const reviewsTable = new Table(this, 'ReviewsTable', {
+      partitionKey: { name: 'orderId', type: AttributeType.STRING },
+      sortKey: { name: 'ruleId', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.DESTROY,
+    })
+
+    const functionLogs = new LogGroup(this, 'QueueFunctionLogs', {
+      retention: RetentionDays.TWO_WEEKS,
+      removalPolicy: RemovalPolicy.DESTROY,
+    })
+
+    // The function's own role: log writes to its log group, and three DynamoDB actions on one table.
+    const functionRole = new Role(this, 'QueueFunctionRole', {
+      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+    })
+    functionLogs.grantWrite(functionRole)
+    functionRole.addToPolicy(
+      new PolicyStatement({
+        actions: ['dynamodb:PutItem', 'dynamodb:GetItem', 'dynamodb:BatchGetItem'],
+        resources: [reviewsTable.tableArn],
+      }),
+    )
+
+    const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
+    const queueFunction = new NodejsFunction(this, 'QueueFunction', {
+      entry: fileURLToPath(new URL('../../server/handler.ts', import.meta.url)),
+      handler: 'handler',
+      projectRoot: repoRoot,
+      depsLockFilePath: fileURLToPath(new URL('../../package-lock.json', import.meta.url)),
+      runtime: Runtime.NODEJS_24_X,
+      architecture: Architecture.ARM_64,
+      memorySize: 256,
+      timeout: Duration.seconds(10),
+      role: functionRole,
+      logGroup: functionLogs,
+      environment: {
+        REVIEWS_TABLE_NAME: reviewsTable.tableName,
+        EVALUATION_TIME: props.evaluationTime,
+        FULFILLMENT_THRESHOLD_HOURS: props.thresholdHours,
+      },
+      bundling: {
+        // The Lambda runtime provides the AWS SDK v3.
+        externalModules: ['@aws-sdk/*'],
+        target: 'node24',
+      },
+    })
+
+    const issuer = `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`
+    const authorizer = new HttpJwtAuthorizer('JwtAuthorizer', issuer, {
+      jwtAudience: [appClient.userPoolClientId],
+    })
+    const integration = new HttpLambdaIntegration('QueueIntegration', queueFunction)
+
+    const corsOrigins: string[] = []
+    if (props.allowLocalhost) corsOrigins.push(LOCALHOST_ORIGIN)
+    const httpApi = new HttpApi(this, 'HttpApi', {
+      apiName: 'fulfillment-watch',
+      corsPreflight: {
+        allowOrigins: corsOrigins,
+        allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST, CorsHttpMethod.OPTIONS],
+        allowHeaders: ['Authorization', 'Content-Type'],
+      },
+    })
+    for (const [path, method] of [
+      ['/queue', HttpMethod.GET],
+      ['/reviews', HttpMethod.POST],
+    ] as const) {
+      httpApi.addRoutes({
+        path,
+        methods: [method],
+        integration,
+        authorizer,
+        authorizationScopes: [REQUIRED_SCOPE],
+      })
+    }
+    const defaultStage = httpApi.defaultStage?.node.defaultChild as CfnStage
+    defaultStage.defaultRouteSettings = { throttlingRateLimit: 10, throttlingBurstLimit: 20 }
   }
 }

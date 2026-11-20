@@ -7,12 +7,21 @@ function compareText(a: string, b: string): number {
 }
 
 /**
- * Natural ascending order for order IDs. All-digit IDs compare numerically
- * without precision loss (strip leading zeros, compare length, then text).
- * Equal numeric values and every other pair compare as text (code-unit order).
+ * Natural ascending order for order IDs.
+ * - Two all-digit IDs compare numerically without precision loss (strip
+ *   leading zeros, compare length, then text). Equal numeric values fall back
+ *   to text order.
+ * - Two other IDs compare as text (code-unit order).
+ * - A mixed pair (one all-digit, one not) puts the all-digit ID first.
+ *   Comparing mixed pairs as text would make the order intransitive
+ *   (for example "0:" < "1" < "02" < "0:"), so Req 3.11 and Property 7 could
+ *   not both hold.
  */
 export function compareOrderIds(a: string, b: string): number {
-  if (ALL_DIGITS.test(a) && ALL_DIGITS.test(b)) {
+  const aDigits = ALL_DIGITS.test(a)
+  const bDigits = ALL_DIGITS.test(b)
+  if (aDigits !== bDigits) return aDigits ? -1 : 1
+  if (aDigits) {
     const na = a.replace(/^0+/, '')
     const nb = b.replace(/^0+/, '')
     if (na.length !== nb.length) return na.length < nb.length ? -1 : 1

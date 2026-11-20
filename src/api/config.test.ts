@@ -1,5 +1,5 @@
 import fc from 'fast-check'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { isApiMode, readApiConfig } from './config.ts'
 
 // Feature: stalled-orders-aws, Property 15: Mode selection follows the build value
@@ -25,7 +25,21 @@ describe('Property 15: Mode selection follows the build value', () => {
 })
 
 describe('readApiConfig', () => {
-  it('returns null when VITE_API_URL is not set in the test build', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+  it('returns null when VITE_API_URL is empty', () => {
+    vi.stubEnv('VITE_API_URL', '')
     expect(readApiConfig()).toBeNull()
+  })
+  it('reads and trims the values when VITE_API_URL is set', () => {
+    vi.stubEnv('VITE_API_URL', ' https://api.example.test/ ')
+    vi.stubEnv('VITE_COGNITO_DOMAIN', 'https://auth.example.test')
+    vi.stubEnv('VITE_COGNITO_CLIENT_ID', 'client123')
+    expect(readApiConfig()).toEqual({
+      apiUrl: 'https://api.example.test',
+      cognitoDomain: 'https://auth.example.test',
+      clientId: 'client123',
+    })
   })
 })

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { formatOrderId, formatReason, formatUtc } from '../format.ts'
+import { formatOrderId, formatReason, formatReviewStatus } from '../format.ts'
 import type { QueueRow } from '../rules/queue.ts'
 import { orderPath } from '../view/routes.ts'
 import AgeChip from './AgeChip.tsx'
@@ -13,6 +13,8 @@ interface QueueTableProps {
   view: QueueView
   onMarkReviewed: (orderId: string) => void
   thresholdHours: number
+  /** Order ID whose last save failed. In API mode a Retry button shows next to it. */
+  retryFor?: string | null
 }
 
 const EMPTY_MESSAGES: Record<QueueView, string> = {
@@ -25,6 +27,7 @@ export default function QueueTable({
   view,
   onMarkReviewed,
   thresholdHours,
+  retryFor = null,
 }: QueueTableProps) {
   if (rows.length === 0) return <EmptyState message={EMPTY_MESSAGES[view]} />
 
@@ -53,12 +56,17 @@ export default function QueueTable({
               <td data-label="Reason">{formatReason(flagged, thresholdHours)}</td>
               <td data-label="Review status">
                 <StatusChip status={review ? 'reviewed' : 'open'} />
-                {review && <span>{formatUtc(review.reviewedAt)}</span>}
+                {review && <span>{formatReviewStatus(review, false)}</span>}
               </td>
               <td data-label="Action">
                 {view === 'open' && (
                   <button type="button" onClick={() => onMarkReviewed(orderId)}>
                     Mark reviewed
+                  </button>
+                )}
+                {view === 'open' && retryFor === orderId && (
+                  <button type="button" onClick={() => onMarkReviewed(orderId)}>
+                    Retry
                   </button>
                 )}
               </td>

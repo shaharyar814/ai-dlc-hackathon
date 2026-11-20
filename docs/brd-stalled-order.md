@@ -66,6 +66,24 @@ Change any of these before the spec is approved.
 - "Oldest first" means earliest payment timestamp first. Ties sort by order ID in natural ascending order.
 - An order that stops matching leaves both Open and Reviewed. Its saved review is kept, so it shows as reviewed if it matches again.
 - A payment timestamp equal to the evaluation time counts as valid and not future.
+- Payment status is compared in lowercase after trimming. Only "paid" can flag. Any other value is excluded, not skipped. A missing value is skipped.
+- Refund status values are none, partial, full. A missing or unrecognized value is skipped as invalid.
+- All 7 fields are required. A missing or duplicate order ID is skipped (keep the first). A missing canceled flag is skipped, not assumed false. Any record that fails validation is skipped, even if unpaid.
+- The list shows hours since payment as whole hours rounded down ("27 h"). The detail shows "27 h 0 min" and the UTC payment timestamp.
+- Records checked counts all records, with skipped shown beside it, for example "20 checked, 3 skipped".
+- Last successful evaluation time is the fixed Evaluation_Time, shown in UTC.
+- Reason text: "Paid 27 h ago, 0 of 2 units fulfilled (threshold 24 h)". Open empty state: "No stalled orders. Nothing needs review." Reviewed empty state: "No reviewed orders yet."
+- The review timestamp comes from the real clock at the click, passed into the review store as an argument so tests can control it. Display as "2026-11-20 12:05 UTC".
+- Add one "Re-run evaluation" button. "Later fulfilled" is covered by automated tests with changed data only.
+- A "N skipped" summary in the header opens a list of order ID and reason.
+- The threshold is a single config constant. No settings screen.
+- Order IDs are shown with "#". Natural ascending order compares numerically when the ID is digits, otherwise as text.
+- "Mark reviewed" is hidden for orders already in Reviewed.
+- Stale saved reviews are kept indefinitely.
+- The 12 to 20 order total includes the invalid demo records.
+- The Stage B brief reference is ignored for Stage A.
+- The Vitest line in `.kiro/steering/testing.md` is updated after this change.
+- If saving a review fails, the order stays Open and an inline error is shown. The app stays usable.
 ## Later (not part of this spec)
  
 - A second rule: shipments missing tracking, with an explicit exemption for shipping methods that do not require tracking. Add it only after rule 1 and its tests are solid.

@@ -1,0 +1,12 @@
+title = "fulfillment-watch gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Dependencies and build output are not project source"
+paths = [
+  '''node_modules/''',
+  '''dist/''',
+  '''package-lock\.json''',
+]

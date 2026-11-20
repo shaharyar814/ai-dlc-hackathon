@@ -215,3 +215,14 @@ describe('WorkbenchProvider in Local mode', () => {
     expect(memory.size).toBe(1)
   })
 })
+
+describe('WorkbenchProvider in API mode: save 403', () => {
+  it('reports forbidden and no save error when a save returns 403', async () => {
+    const user = userEvent.setup()
+    renderApi(clientWith({ postReview: vi.fn(() => Promise.reject(new ApiError('forbidden', 403))) }))
+    await waitFor(() => expect(text('status')).toBe('ready'))
+    await user.click(screen.getByText('mark'))
+    await waitFor(() => expect(text('status')).toBe('forbidden'))
+    expect(text('save-error')).toBe('null')
+  })
+})

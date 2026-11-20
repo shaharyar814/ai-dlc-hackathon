@@ -177,3 +177,26 @@ describe('SignInMessage', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 })
+
+describe('App in API mode: permission failures', () => {
+  it('shows the not-in-group screen with no Retry when a save returns 403', async () => {
+    const postReview = vi.fn<ApiClient['postReview']>().mockRejectedValue(new ApiError('forbidden', 403))
+    const { user } = renderApi(client({ postReview }), '/orders/1042', { href: 'https://example.test/logout', onSignOut: () => {} })
+    await user.click(await screen.findByRole('button', { name: 'Mark reviewed' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'No access' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByText('#1042')).toBeNull()
+  })
+
+  it('offers Sign out on the not-in-group screen', async () => {
+    const onSignOut = vi.fn()
+    const { user } = renderApi(
+      client({ getQueue: vi.fn(() => Promise.reject(new ApiError('forbidden', 403))) }),
+      '/',
+      { href: '#', onSignOut },
+    )
+    await screen.findByRole('heading', { level: 1, name: 'No access' })
+    await user.click(screen.getByRole('link', { name: 'Sign out' }))
+    expect(onSignOut).toHaveBeenCalledTimes(1)
+  })
+})

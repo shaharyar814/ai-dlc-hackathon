@@ -150,6 +150,10 @@ export default function WorkbenchProvider({
         setSaveErrorFor(null)
       } else if (saved.error.kind === 'unauthorized') {
         onUnauthorized?.()
+      } else if (saved.error.kind === 'forbidden') {
+        // No Retry for a permission failure: show the not-in-group screen instead.
+        setSaveErrorFor(null)
+        setStatus('forbidden')
       } else {
         setSaveErrorFor(orderId)
       }

@@ -7,6 +7,9 @@ interface HeaderProps {
   skippedCount: number
   evaluationTime: string
   onRerun: () => void
+  /** API mode only. When set, a Sign out link is shown. */
+  signOutHref?: string
+  onSignOut?: () => void
 }
 
 export default function Header({
@@ -14,6 +17,8 @@ export default function Header({
   skippedCount,
   evaluationTime,
   onRerun,
+  signOutHref,
+  onSignOut,
 }: HeaderProps) {
   return (
     <header>
@@ -24,6 +29,11 @@ export default function Header({
       <button type="button" onClick={onRerun}>
         Re-run evaluation
       </button>
+      {signOutHref !== undefined && (
+        <a href={signOutHref} onClick={onSignOut}>
+          Sign out
+        </a>
+      )}
     </header>
   )
 }

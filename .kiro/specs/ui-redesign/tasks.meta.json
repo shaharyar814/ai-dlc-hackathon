@@ -1,0 +1,124 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Pin `react-router-dom` to an exact version": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200342608
+      }
+    ],
+    "1.2 Create `src/styles/tokens.css` and reset `src/index.css`": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200350848
+      }
+    ],
+    "2.1 Implement `src/view/routes.ts`": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200358619
+      }
+    ],
+    "2.2 Write property tests for routing": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200364671
+      }
+    ],
+    "2.3 Implement the remaining view functions": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200371251
+      }
+    ],
+    "2.4 Write property tests for the view functions": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200377255
+      }
+    ],
+    "2.5 Write property test for marking reviewed": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200384019
+      }
+    ],
+    "3.1 Implement the state provider": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200390595
+      }
+    ],
+    "3.2 Implement `src/hooks/useRouteEffects.ts`": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200396875
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200403460
+      }
+    ],
+    "5.1 Create `Icon`, `AgeChip` and `StatusChip`": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200409713
+      }
+    ],
+    "5.2 Write tests for the chips": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200416741
+      }
+    ],
+    "5.3 Create `NavBar` and update `Header`": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200423889
+      }
+    ],
+    "5.4 Update `Header.test.tsx` without weakening assertions": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200431395
+      }
+    ],
+    "6.1 Build the queue components": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200437776
+      }
+    ],
+    "6.2 Update `QueueTable.test.tsx` without weakening assertions": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200444346
+      }
+    ],
+    "6.3 Create `src/pages/QueuePage.tsx`": [
+      {
+        "executionId": "9b735a54-bfa7-4135-aa61-5e7a2133eea3",
+        "chatSessionId": "sess_dbfa9513-b17e-4dd0-9418-14e2e60f59a8",
+        "timestamp": 1795200453269
+      }
+    ]
+  }
+}

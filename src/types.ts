@@ -48,6 +48,7 @@ export interface ReviewRecord {
   readonly orderId: string
   readonly ruleId: string
   readonly reviewedAt: string // ISO 8601 UTC, ends in Z
+  readonly reviewer?: string // set in API mode only (Cognito username)
 }
 
 export type ReviewMap = ReadonlyMap<string, ReviewRecord>

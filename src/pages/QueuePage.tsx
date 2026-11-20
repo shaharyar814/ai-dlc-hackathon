@@ -10,7 +10,7 @@ interface QueuePageProps {
 }
 
 export default function QueuePage({ view }: QueuePageProps) {
-  const { result, open, reviewed, saveErrorFor, markReviewed } = useWorkbench()
+  const { result, open, reviewed, saveErrorFor, markReviewed, mode, thresholdHours } = useWorkbench()
   const summary = summarize(open, reviewed, result.skipped)
 
   return (
@@ -25,7 +25,8 @@ export default function QueuePage({ view }: QueuePageProps) {
         rows={view === 'open' ? open : reviewed}
         view={view}
         onMarkReviewed={markReviewed}
-        thresholdHours={DEFAULT_THRESHOLD_HOURS}
+        thresholdHours={thresholdHours ?? DEFAULT_THRESHOLD_HOURS}
+        retryFor={mode === 'api' ? saveErrorFor : null}
       />
     </>
   )

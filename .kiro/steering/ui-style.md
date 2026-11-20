@@ -16,6 +16,6 @@ Follow these for every UI change in this project. They are rules for you, not do
 - Spacing MUST use the scale in the tokens file. Keep one page title (`h1`) per page.
 - Motion MUST be minimal and MUST respect `prefers-reduced-motion`.
 - NEVER add a component library or CSS framework. Icons are inline SVG.
-- NEVER change `src/rules/`, `src/storage/` or `src/data/` for a UI task.
+- NEVER change `src/rules/` or `src/data/`. You may add new files under `src/storage/`, but do not change the existing `src/storage/reviews.ts`.
 - After a UI change, run the app and check it in the browser with the Playwright tools. Save screenshots at 360, 768 and 1280 px under `docs/screenshots/`.
  

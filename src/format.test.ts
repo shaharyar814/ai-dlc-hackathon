@@ -109,3 +109,38 @@ describe('format properties', () => {
     }
   })
 })
+
+import { formatReviewStatus } from './format.ts'
+
+// Feature: stalled-orders-aws, Property 20: Review status text names the reviewer
+describe('formatReviewStatus', () => {
+  const reviewedAt = fc
+    .integer({ min: 0, max: 4_102_444_800_000 })
+    .map((ms) => new Date(ms).toISOString())
+  const reviewer = fc.stringMatching(/^[a-z][a-z0-9_.-]{0,15}$/)
+
+  it('Property 20: names the reviewer and the UTC time when a reviewer is present', () => {
+    fc.assert(
+      fc.property(reviewedAt, reviewer, (at, name) => {
+        expect(formatReviewStatus({ reviewedAt: at, reviewer: name }, true)).toBe(
+          `Reviewed by ${name} ${formatUtc(at)}`,
+        )
+        expect(formatReviewStatus({ reviewedAt: at, reviewer: name }, false)).toBe(
+          `by ${name} ${formatUtc(at)}`,
+        )
+      }),
+      { numRuns: 200 },
+    )
+  })
+
+  it('Property 20: returns exactly the Stage A text when there is no reviewer', () => {
+    fc.assert(
+      fc.property(reviewedAt, (at) => {
+        expect(formatReviewStatus({ reviewedAt: at }, true)).toBe(`Reviewed ${formatUtc(at)}`)
+        expect(formatReviewStatus({ reviewedAt: at }, false)).toBe(formatUtc(at))
+        expect(formatReviewStatus({ reviewedAt: at, reviewer: '' }, false)).toBe(formatUtc(at))
+      }),
+      { numRuns: 200 },
+    )
+  })
+})

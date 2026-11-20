@@ -8,9 +8,10 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "scan:secrets": "gitleaks dir . --config .gitleaks.toml --no-banner --redact --verbose && gitleaks git . --config .gitleaks.toml --no-banner --redact --verbose",
-    "scan:sast": "semgrep scan --metrics=off --disable-version-check --error --quiet --config p/typescript --config p/react --config p/security-audit src index.html vite.config.ts",
+    "scan:sast": "semgrep scan --metrics=off --disable-version-check --error --quiet --config p/typescript --config p/react --config p/security-audit src server infra scripts index.html vite.config.ts",
     "check": "npm run lint && npm run scan:secrets && npm run scan:sast",
     "preview": "vite preview",
+    "cdk": "cdk",
     "test": "vitest"
   },
   "dependencies": {
@@ -19,13 +20,20 @@
     "react-router-dom": "7.18.6"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "3.1173.0",
+    "@aws-sdk/lib-dynamodb": "3.1173.0",
     "@eslint/js": "^10.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.13",
+    "@types/aws-lambda": "8.10.164",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "aws-cdk": "2.1149.0",
+    "aws-cdk-lib": "2.277.0",
+    "constructs": "10.8.1",
+    "esbuild": "0.28.2",
     "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",

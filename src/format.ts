@@ -37,3 +37,17 @@ export function formatOrderId(orderId: string): string {
 export function formatCounts(checked: number, skipped: number): string {
   return `${checked} checked, ${skipped} skipped`
 }
+/**
+ * Review status text. With a reviewer (API mode): "Reviewed by lead1 2026-11-20 12:05 UTC".
+ * Without one (Stage A): "Reviewed 2026-11-20 12:05 UTC". Where a "Reviewed" chip already
+ * shows the label, pass `withLabel: false` to get "by lead1 2026-11-20 12:05 UTC" or just the time.
+ */
+export function formatReviewStatus(
+  review: { readonly reviewedAt: string; readonly reviewer?: string },
+  withLabel: boolean,
+): string {
+  const time = formatUtc(review.reviewedAt)
+  const reviewer = review.reviewer
+  const text = reviewer !== undefined && reviewer !== '' ? `by ${reviewer} ${time}` : time
+  return withLabel ? `Reviewed ${text}` : text
+}

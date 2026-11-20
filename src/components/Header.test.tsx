@@ -77,3 +77,47 @@ describe('Header', () => {
     expect(links.every((l) => l.getAttribute('aria-current') === null)).toBe(true)
   })
 })
+
+describe('Header: Sign out link (API mode)', () => {
+  function renderWithSignOut(signOutHref?: string, onSignOut?: () => void) {
+    return render(
+      <MemoryRouter>
+        <Header
+          checkedCount={1}
+          skippedCount={0}
+          evaluationTime="2026-11-20T12:00:00Z"
+          onRerun={() => {}}
+          signOutHref={signOutHref}
+          onSignOut={onSignOut}
+        />
+      </MemoryRouter>,
+    )
+  }
+
+  it('shows a Sign out link only when the prop is set', () => {
+    const { unmount } = renderWithSignOut()
+    expect(screen.queryByRole('link', { name: 'Sign out' })).toBeNull()
+    unmount()
+    renderWithSignOut('https://example.test/logout?client_id=c')
+    expect(screen.getByRole('link', { name: 'Sign out' }).getAttribute('href')).toBe(
+      'https://example.test/logout?client_id=c',
+    )
+  })
+
+  it('adds no other element to the header', () => {
+    const { container, unmount } = renderWithSignOut()
+    const without = container.querySelector('header')?.children.length ?? 0
+    unmount()
+    const withLink = renderWithSignOut('https://example.test/logout')
+    const header = withLink.container.querySelector('header')
+    expect(header?.children.length).toBe(without + 1)
+    expect(header?.lastElementChild?.tagName).toBe('A')
+  })
+
+  it('calls the sign-out handler when selected', async () => {
+    const onSignOut = vi.fn()
+    renderWithSignOut('#', onSignOut)
+    await userEvent.setup().click(screen.getByRole('link', { name: 'Sign out' }))
+    expect(onSignOut).toHaveBeenCalledTimes(1)
+  })
+})

@@ -2,10 +2,11 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  // The IDE proxy serves this app under /absproxy/5173/ (prefix is preserved).
-  base: '/absproxy/5173/',
+  // The IDE proxy serves the dev server under /absproxy/5173/ (prefix is preserved).
+  // The production build is served from the site root (S3 and CloudFront).
+  base: command === 'build' ? '/' : '/absproxy/5173/',
   server: {
     port: 5173,
     // Only allow the IDE's CloudFront host, not every host.
@@ -13,4 +14,4 @@ export default defineConfig({
     // HMR websocket must go through the public HTTPS port, not 5173.
     hmr: { protocol: 'wss', clientPort: 443 },
   },
-})
+}))

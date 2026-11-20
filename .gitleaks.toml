@@ -8,5 +8,6 @@ description = "Dependencies and build output are not project source"
 paths = [
   '''node_modules/''',
   '''dist/''',
+  '''cdk\.out/''',
   '''package-lock\.json''',
 ]

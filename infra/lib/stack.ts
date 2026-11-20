@@ -1,13 +1,21 @@
-import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib'
+import { CfnOutput, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib'
 import type { StackProps } from 'aws-cdk-lib'
 import { CorsHttpMethod, HttpApi, HttpMethod, CfnStage } from 'aws-cdk-lib/aws-apigatewayv2'
 import { HttpJwtAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2-authorizers'
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations'
+import { Alarm, ComparisonOperator, Metric, TreatMissingData } from 'aws-cdk-lib/aws-cloudwatch'
+import {
+  Distribution,
+  PriceClass,
+  ViewerProtocolPolicy,
+} from 'aws-cdk-lib/aws-cloudfront'
+import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins'
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb'
 import { PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam'
 import { Architecture, Runtime } from 'aws-cdk-lib/aws-lambda'
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs'
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs'
+import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3'
 import { fileURLToPath } from 'node:url'
 import {
   CfnManagedLoginBranding,
@@ -69,8 +77,27 @@ export class FulfillmentWatchStack extends Stack {
       managedLoginVersion: ManagedLoginVersion.NEWER_MANAGED_LOGIN,
     })
 
-    // Callback and logout URLs: the CloudFront URL is added with the hosting resources.
-    const redirectUrls = [LOCALHOST_ORIGIN]
+    // Hosting: a private bucket behind CloudFront with origin access control. The site uses hash
+    // routes, so no 403/404 page rewrite is needed.
+    const siteBucket = new Bucket(this, 'SiteBucket', {
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      encryption: BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    })
+    const distribution = new Distribution(this, 'SiteDistribution', {
+      defaultRootObject: 'index.html',
+      priceClass: PriceClass.PRICE_CLASS_100,
+      defaultBehavior: {
+        origin: S3BucketOrigin.withOriginAccessControl(siteBucket),
+        viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+    })
+    const siteOrigin = `https://${distribution.distributionDomainName}`
+
+    // Callback and logout URLs: exactly the CloudFront URL and the local dev server.
+    const redirectUrls = [siteOrigin, LOCALHOST_ORIGIN]
     const appClient = userPool.addClient('AppClient', {
       generateSecret: false,
       supportedIdentityProviders: [UserPoolClientIdentityProvider.COGNITO],
@@ -146,7 +173,7 @@ export class FulfillmentWatchStack extends Stack {
     })
     const integration = new HttpLambdaIntegration('QueueIntegration', queueFunction)
 
-    const corsOrigins: string[] = []
+    const corsOrigins: string[] = [siteOrigin]
     if (props.allowLocalhost) corsOrigins.push(LOCALHOST_ORIGIN)
     const httpApi = new HttpApi(this, 'HttpApi', {
       apiName: 'fulfillment-watch',
@@ -170,5 +197,40 @@ export class FulfillmentWatchStack extends Stack {
     }
     const defaultStage = httpApi.defaultStage?.node.defaultChild as CfnStage
     defaultStage.defaultRouteSettings = { throttlingRateLimit: 10, throttlingBurstLimit: 20 }
+
+    const fiveMinutes = Duration.minutes(5)
+    new Alarm(this, 'FunctionErrorsAlarm', {
+      alarmDescription: 'The queue function reported an error',
+      metric: queueFunction.metricErrors({ period: fiveMinutes, statistic: 'Sum' }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    })
+    new Alarm(this, 'Api5xxAlarm', {
+      alarmDescription: 'The API returned a 5xx response',
+      metric: new Metric({
+        namespace: 'AWS/ApiGateway',
+        metricName: '5xx',
+        dimensionsMap: { ApiId: httpApi.apiId },
+        statistic: 'Sum',
+        period: fiveMinutes,
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    })
+
+    // None of these values is a secret.
+    new CfnOutput(this, 'ApiUrl', { value: httpApi.apiEndpoint })
+    new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId })
+    new CfnOutput(this, 'AppClientId', { value: appClient.userPoolClientId })
+    new CfnOutput(this, 'CognitoDomainUrl', {
+      value: `https://${COGNITO_DOMAIN_PREFIX}.auth.${this.region}.amazoncognito.com`,
+    })
+    new CfnOutput(this, 'SiteUrl', { value: siteOrigin })
+    new CfnOutput(this, 'SiteBucketName', { value: siteBucket.bucketName })
+    new CfnOutput(this, 'DistributionId', { value: distribution.distributionId })
   }
 }

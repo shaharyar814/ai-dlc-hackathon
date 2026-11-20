@@ -3,7 +3,7 @@
 ## Stack
 - React 19 and TypeScript (~6.0) on Vite 8, from the `react-ts` template. ESM (`"type": "module"`).
 - `@vitejs/plugin-react` for JSX.
-- Storage: browser local storage. No backend in Stage A.
+- Storage: browser local storage in Stage A local mode. In API mode (build-time `VITE_API_URL` set), reviews live in DynamoDB behind an HTTP API. Stage A stays working when `VITE_API_URL` is empty.
 - Tests: Vitest is installed. Four more dev dependencies were approved and installed with it: `fast-check` (property tests), `jsdom`, `@testing-library/react`, and `@testing-library/user-event` (component tests). Ask before adding any other dependency.
 - Lint: ESLint 10 flat config with `typescript-eslint` recommended, `react-hooks`, and `react-refresh`.
 
@@ -29,7 +29,7 @@
 - Keep the evaluation time constant (`2026-11-20T12:00:00Z`) and the threshold (default 24) in one config module. Never call `Date.now()` in rule logic.
 - Parse timestamps as UTC. Treat an unparsable date as an invalid record.
 - Wrap local storage reads and writes in a small module. Handle missing, corrupt, or unavailable storage without crashing.
-- Keep the app read-only toward order data. Do not add network calls.
+- Keep the app read-only toward order data. Network calls are allowed only in API mode, and only through the single `src/api` module. Local mode makes no network calls.
 - Use synthetic data only. No secrets, tokens, or real customer data in code or the repo.
 - Follow ESLint rules. Components in `.tsx` files should export only components (react-refresh).
 - Use function components and hooks. No class components.

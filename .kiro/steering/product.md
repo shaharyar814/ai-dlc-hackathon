@@ -3,7 +3,7 @@
 Source of truth: `docs/brd-stalled-order.md`. Read it before changing behavior.
 
 ## Non-negotiable constraints
-- Read-only toward the commerce system. The app never writes to, or calls, Shopify, commercetools, or any order system. Only the local review status is written, and only to browser local storage.
+- Read-only toward the commerce system. The app never writes to, or calls, Shopify, commercetools, or any order system. Only the review status is written: to browser local storage in local mode, or through the Stage B API to DynamoDB in API mode. The only network calls are those to the Stage B API (and Cognito sign-in) in API mode, made through `src/api`.
 - Fixed evaluation time: `2026-11-20T12:00:00Z`. Never use the real clock (`Date.now()`, `new Date()`) for rule evaluation.
 - Synthetic data only. No real, customer, or sensitive data anywhere in code, fixtures, or docs.
 

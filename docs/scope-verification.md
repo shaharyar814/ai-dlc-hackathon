@@ -1,19 +1,34 @@
 # Missing-scope verification
 
-Requirement 1.4 expects HTTP 403 for a request that carries a valid access token without the scope `fulfillment-watch/api`. That status is **unverified**. This page records what the deployed API returns.
+Requirement 1.4 expects HTTP 403 for a request that carries a valid access token without the scope `fulfillment-watch/api`. This page records what the deployed API returns.
 
 ## Result
 
+Verified on 2026-11-20 against the deployed stack (us-east-1) with `scripts/verify-deployed-api.mjs`, 9 checks passed, 0 failed, 0 skipped.
+
 | Check | Expected | Observed | Date read |
 | --- | --- | --- | --- |
-| `GET /queue` with no token | 401 | not yet verified | not yet verified |
-| `GET /queue` with a malformed token | 401 | not yet verified | not yet verified |
-| `GET /queue` with a valid token that lacks `fulfillment-watch/api` | 403 (unverified) | not yet verified | not yet verified |
-| `GET /queue` with a valid token for a user outside `fulfillment-lead` | 403 | not yet verified | not yet verified |
-| `GET /reviews` | 404 | not yet verified | not yet verified |
-| CORS headers on the 401 and 403 responses | present | not yet verified | not yet verified |
+| `GET /queue` with no token | 401 | 401 | 2026-11-20 |
+| `GET /queue` with a malformed token | 401 | 401 | 2026-11-20 |
+| `GET /queue` with a valid token that lacks `fulfillment-watch/api` (lead1, scope `openid` only) | 403 (unverified) | **403** | 2026-11-20 |
+| `GET /queue` with a valid token for a user outside `fulfillment-lead` (outsider1, scope `fulfillment-watch/api`) | 403 | 403 | 2026-11-20 |
+| `GET /reviews` | 404 | 404 | 2026-11-20 |
+| CORS `access-control-allow-origin` on the 401 and 403 responses | the site origin | the site origin (all four) | 2026-11-20 |
 
-Nothing has been run against a deployed stack yet. Replace each "not yet verified" with the observed status and the date (`YYYY-MM-DD`) after the procedure below. Do not fill in a value that was not observed.
+The missing-scope status is 403, as requirement 1.4 expected, so no requirement needs correcting.
+
+Review flow, checked with the lead1 token on 2026-11-20 (a separate request check, not part of the script):
+
+| Request | Observed |
+| --- | --- |
+| `GET /queue` | 200, 6 rows, 17 checked |
+| `POST /reviews` for order 998 (first) | 201 with the review |
+| `POST /reviews` for order 998 (repeat) | 200 with the same timestamp and reviewer `lead1` |
+| `GET /queue` afterwards | row 998 carries that timestamp and reviewer |
+| `POST /reviews` as outsider1 | 403 |
+| `POST /reviews` for order 1044 (not in the queue) | 400 |
+
+Order 998 stays reviewed in the deployed table.
 
 ## Procedure
 

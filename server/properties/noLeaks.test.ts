@@ -17,13 +17,17 @@ function failingStore(message: string, stack: string): ReviewStore {
   return { getMany: () => Promise.resolve().then(fail), save: () => Promise.resolve().then(fail) }
 }
 
-const secret = fc.stringMatching(/^[A-Za-z0-9]{12,24}$/)
+// Lowercase bodies with distinct uppercase prefixes, so no value can be a substring of another.
+const body = fc.stringMatching(/^[a-z0-9]{12,24}$/)
+const errArb = body.map((s) => `ERR${s}`)
+const stackArb = body.map((s) => `STK${s}`)
+const tokenArb = body.map((s) => `TOK${s}`)
 
 // Feature: stalled-orders-aws, Property 13: Failures do not leak internals or credentials
 describe('Property 13: Failures do not leak internals or credentials', () => {
   it('returns the fixed body, logs the cause, and never logs the Authorization value', async () => {
     await fc.assert(
-      fc.asyncProperty(secret, secret, secret, fc.boolean(), async (errText, stackText, token, onPost) => {
+      fc.asyncProperty(errArb, stackArb, tokenArb, fc.boolean(), async (errText, stackText, token, onPost) => {
         const store = failingStore(`boom-${errText}`, `Error: at ${stackText}`)
         const h = createHarness(dataset, { store })
         const base: ApiEvent = onPost

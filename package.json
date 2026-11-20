@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "scan:secrets": "gitleaks dir . --config .gitleaks.toml --no-banner --redact --verbose && gitleaks git . --config .gitleaks.toml --no-banner --redact --verbose",
-    "scan:sast": "semgrep scan --metrics=off --disable-version-check --error --quiet --config p/typescript --config p/react --config p/security-audit src index.html vite.config.ts",
+    "scan:sast": "semgrep scan --metrics=off --disable-version-check --error --quiet --config p/typescript --config p/react --config p/security-audit src server infra scripts index.html vite.config.ts",
     "check": "npm run lint && npm run scan:secrets && npm run scan:sast",
     "preview": "vite preview",
     "cdk": "cdk",

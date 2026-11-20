@@ -19,7 +19,10 @@ afterEach(() => {
 async function startStub(handler: Handler): Promise<string> {
   const server = createServer((req, res) => {
     const status = handler(req.method ?? '', req.url ?? '', String(req.headers.authorization ?? ''))
-    res.writeHead(status, { 'access-control-allow-origin': String(req.headers.origin ?? ''), 'content-type': 'application/json' })
+    const headers: Record<string, string> = { 'content-type': 'application/json' }
+    // Only the known test origin is echoed, as a literal constant.
+    if (req.headers.origin === ORIGIN) headers['access-control-allow-origin'] = ORIGIN
+    res.writeHead(status, headers)
     res.end('{}')
   })
   servers.push(server)

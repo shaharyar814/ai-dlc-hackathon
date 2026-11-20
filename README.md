@@ -80,6 +80,8 @@ The Lambda reads two environment variables, set at deploy time through CDK conte
 1. Redeploy with the new value, for example: `npm run cdk -- deploy -c allowLocalhost=false -c thresholdHours=48`. A threshold must be a decimal number above 0. An evaluation time must be ISO 8601 UTC ending in `Z`. A bad value stops `cdk synth` with an error.
 2. Confirm it took effect: sign in and check that the header shows the new evaluation time and that the "Reason" text of a row shows the new threshold (for example "threshold 48 h"). A request cannot override either value.
 
+Known limitation: the Rule page still shows the evaluation time and threshold from `src/config.ts`, not the deployed values. After you change `evaluationTime` or `thresholdHours`, read them from the header and the "Reason" column instead.
+
 If a bad value reaches the Lambda another way, `GET /queue` returns HTTP 500 with a generic message and the cause is in the function's CloudWatch log.
 
 ## Check the deployed API

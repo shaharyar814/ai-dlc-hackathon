@@ -1,0 +1,52 @@
+:root {
+  /* Colors */
+  --color-page: #f6f7f9;
+  --color-card: #ffffff;
+  --color-text: #1f2933;
+  --color-text-muted: #52606d;
+  --color-border: #cbd2d9;
+
+  /* One blue accent */
+  --color-accent: #1d4ed8;
+  --color-accent-contrast: #ffffff;
+  --color-accent-bg: #dbeafe;
+
+  /* Status and urgency (text color and chip tint) */
+  --color-reviewed: #166534;
+  --color-reviewed-bg: #dcfce7;
+  --color-late: #92400e;
+  --color-late-bg: #fef3c7;
+  --color-very-late: #991b1b;
+  --color-very-late-bg: #fee2e2;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Radii and borders */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-pill: 62.5rem;
+  --border-width: 0.0625rem;
+
+  /* Type */
+  --font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-size-small: 0.875rem;
+  --font-size-body: 1rem;
+  --font-size-large: 1.25rem;
+  --font-size-title: 1.75rem;
+  --line-height-body: 1.5;
+
+  /* Interaction */
+  --size-target: 2.5rem;
+  --focus-ring-width: 0.1875rem;
+  --focus-ring-offset: 0.125rem;
+  --focus-ring-color: var(--color-accent);
+
+  /* Motion */
+  --motion-fast: 150ms;
+}

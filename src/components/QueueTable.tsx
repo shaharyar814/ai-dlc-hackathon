@@ -1,14 +1,16 @@
-import { formatHours, formatOrderId, formatReason, formatUtc } from '../format.ts'
+import { Link } from 'react-router-dom'
+import { formatOrderId, formatReason, formatUtc } from '../format.ts'
 import type { QueueRow } from '../rules/queue.ts'
+import { orderPath } from '../view/routes.ts'
+import AgeChip from './AgeChip.tsx'
 import EmptyState from './EmptyState.tsx'
+import StatusChip from './StatusChip.tsx'
 
 export type QueueView = 'open' | 'reviewed'
 
 interface QueueTableProps {
   rows: readonly QueueRow[]
   view: QueueView
-  selectedId: string | null
-  onSelect: (orderId: string) => void
   onMarkReviewed: (orderId: string) => void
   thresholdHours: number
 }
@@ -21,8 +23,6 @@ const EMPTY_MESSAGES: Record<QueueView, string> = {
 export default function QueueTable({
   rows,
   view,
-  selectedId,
-  onSelect,
   onMarkReviewed,
   thresholdHours,
 }: QueueTableProps) {
@@ -44,19 +44,18 @@ export default function QueueTable({
           const { orderId } = flagged.order
           return (
             <tr key={orderId}>
-              <td>
-                <button
-                  type="button"
-                  aria-current={selectedId === orderId ? 'true' : undefined}
-                  onClick={() => onSelect(orderId)}
-                >
-                  {formatOrderId(orderId)}
-                </button>
+              <td data-label="Order">
+                <Link to={orderPath(orderId)}>{formatOrderId(orderId)}</Link>
               </td>
-              <td>{formatHours(flagged.elapsedMs)}</td>
-              <td>{formatReason(flagged, thresholdHours)}</td>
-              <td>{review ? `Reviewed ${formatUtc(review.reviewedAt)}` : 'Open'}</td>
-              <td>
+              <td data-label="Hours since payment">
+                <AgeChip elapsedMs={flagged.elapsedMs} />
+              </td>
+              <td data-label="Reason">{formatReason(flagged, thresholdHours)}</td>
+              <td data-label="Review status">
+                <StatusChip status={review ? 'reviewed' : 'open'} />
+                {review && <span>{formatUtc(review.reviewedAt)}</span>}
+              </td>
+              <td data-label="Action">
                 {view === 'open' && (
                   <button type="button" onClick={() => onMarkReviewed(orderId)}>
                     Mark reviewed

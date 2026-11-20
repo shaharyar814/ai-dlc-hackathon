@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { QueueRow } from '../rules/queue.ts'
 import QueueTable from './QueueTable.tsx'
@@ -30,13 +31,15 @@ function renderTable(overrides: Partial<Parameters<typeof QueueTable>[0]> = {}) 
   const props = {
     rows: [row('1042')],
     view: 'open' as const,
-    selectedId: null,
-    onSelect: vi.fn(),
     onMarkReviewed: vi.fn(),
     thresholdHours: 24,
     ...overrides,
   }
-  render(<QueueTable {...props} />)
+  render(
+    <MemoryRouter>
+      <QueueTable {...props} />
+    </MemoryRouter>,
+  )
   return props
 }
 
@@ -50,22 +53,37 @@ describe('QueueTable', () => {
 
   it('shows order, hours, reason, and review status in a row', () => {
     renderTable()
-    const tableRow = screen.getByRole('button', { name: '#1042' }).closest('tr') as HTMLElement
+    const tableRow = screen.getByRole('link', { name: '#1042' }).closest('tr') as HTMLElement
     expect(within(tableRow).getByText('27 h')).toBeTruthy()
     expect(
       within(tableRow).getByText('Paid 27 h ago, 0 of 2 units fulfilled (threshold 24 h)'),
     ).toBeTruthy()
     expect(within(tableRow).getByText('Open')).toBeTruthy()
+    expect(within(tableRow).getByText('Late')).toBeTruthy()
   })
 
   it('shows the review timestamp for reviewed rows', () => {
     renderTable({ rows: [row('1042', '2026-11-20T12:05:31.000Z')], view: 'reviewed' })
-    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
+    expect(screen.getByText('Reviewed')).toBeTruthy()
+    expect(screen.getByText('2026-11-20 12:05 UTC')).toBeTruthy()
   })
 
-  it('marks the selected order with aria-current', () => {
-    renderTable({ selectedId: '1042' })
-    expect(screen.getByRole('button', { name: '#1042' }).getAttribute('aria-current')).toBe('true')
+  it('links each order ID to its order page', () => {
+    renderTable({ rows: [row('1042'), row('1043')] })
+    expect(screen.getByRole('link', { name: '#1042' }).getAttribute('href')).toBe('/orders/1042')
+    expect(screen.getByRole('link', { name: '#1043' }).getAttribute('href')).toBe('/orders/1043')
+  })
+
+  it('encodes special characters in the order link', () => {
+    renderTable({ rows: [row('A/B 1')] })
+    expect(screen.getByRole('link', { name: '#A/B 1' }).getAttribute('href')).toBe(
+      '/orders/A%2FB%201',
+    )
+  })
+
+  it('has no order button, only a link', () => {
+    renderTable()
+    expect(screen.queryByRole('button', { name: '#1042' })).toBeNull()
   })
 
   it('shows Mark reviewed in Open and hides it in Reviewed', () => {
@@ -89,9 +107,9 @@ describe('QueueTable', () => {
     const user = userEvent.setup()
     const props = renderTable()
     await user.tab()
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: '#1042' }))
-    await user.keyboard('{Enter}')
-    expect(props.onSelect).toHaveBeenCalledWith('1042')
+    const link = screen.getByRole('link', { name: '#1042' })
+    expect(document.activeElement).toBe(link)
+    expect(link.getAttribute('href')).toBe('/orders/1042')
     await user.tab()
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Mark reviewed' }))
     await user.keyboard('{Enter}')

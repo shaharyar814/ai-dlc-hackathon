@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
 import { REVIEW_STORAGE_KEY } from './config.ts'
@@ -30,9 +31,14 @@ const FLAGGED_ORDER = ['#1051', '#1049', '#1050', '#998', '#1042', '#1043']
 function renderApp(
   storage: StorageLike | null = new FakeStorage(),
   dataset: readonly RawOrder[] = DATASET,
+  initialEntry = '/',
 ) {
   const user = userEvent.setup()
-  const utils = render(<App dataset={dataset} storage={storage} now={FIXED_NOW} />)
+  const utils = render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <App dataset={dataset} storage={storage} now={FIXED_NOW} />
+    </MemoryRouter>,
+  )
   return { user, storage, ...utils }
 }
 
@@ -40,7 +46,7 @@ function orderButtons(): string[] {
   return screen
     .queryAllByRole('row')
     .slice(1)
-    .map((r) => within(r).getAllByRole('button')[0].textContent ?? '')
+    .map((r) => within(r).getAllByRole('link')[0].textContent ?? '')
 }
 
 describe('App', () => {
@@ -52,44 +58,56 @@ describe('App', () => {
 
   it('switches between Open and Reviewed views', async () => {
     const { user } = renderApp()
-    const openBtn = screen.getByRole('button', { name: 'Open' })
-    const reviewedBtn = screen.getByRole('button', { name: 'Reviewed' })
-    expect(openBtn.getAttribute('aria-pressed')).toBe('true')
-    expect(reviewedBtn.getAttribute('aria-pressed')).toBe('false')
-    await user.click(reviewedBtn)
-    expect(reviewedBtn.getAttribute('aria-pressed')).toBe('true')
-    expect(openBtn.getAttribute('aria-pressed')).toBe('false')
+    const openTab = screen.getByRole('link', { name: 'Open (6)' })
+    const reviewedTab = screen.getByRole('link', { name: 'Reviewed (0)' })
+    expect(openTab.getAttribute('aria-current')).toBe('page')
+    expect(reviewedTab.getAttribute('aria-current')).toBeNull()
+    await user.click(reviewedTab)
+    expect(screen.getByRole('link', { name: 'Reviewed (0)' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
+    expect(screen.getByRole('link', { name: 'Open (6)' }).getAttribute('aria-current')).toBeNull()
     expect(screen.getByRole('status').textContent).toBe('No reviewed orders yet.')
-    await user.click(openBtn)
+    await user.click(screen.getByRole('link', { name: 'Open (6)' }))
     expect(orderButtons()).toEqual(FLAGGED_ORDER)
   })
 
-  it('shows the detail of the selected row and replaces it on another selection', async () => {
+  it('shows the detail of the order link and replaces it on another navigation', async () => {
     const { user } = renderApp()
-    await user.click(screen.getByRole('button', { name: '#1042' }))
+    await user.click(screen.getByRole('link', { name: '#1042' }))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('#1042')
     expect(screen.getByText('27 h 0 min')).toBeTruthy()
     expect(screen.getByText('0 of 2 units fulfilled')).toBeTruthy()
     expect(screen.getByText('Confirm pick status with the warehouse.')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: '#1051' }))
+    await user.click(screen.getByRole('link', { name: /Back to queue/ }))
+    expect(orderButtons()).toEqual(FLAGGED_ORDER)
+    await user.click(screen.getByRole('link', { name: '#1051' }))
     expect(screen.queryByText('0 of 2 units fulfilled')).toBeNull()
     expect(screen.getByText('0 of 4 units fulfilled')).toBeTruthy()
   })
 
+  it('opens an order directly from its initial entry', () => {
+    renderApp(new FakeStorage(), DATASET, '/orders/1042')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('#1042')
+    expect(screen.getByText('0 of 2 units fulfilled')).toBeTruthy()
+    expect(screen.getByText('17 checked, 5 skipped')).toBeTruthy()
+  })
+
   it('marks #1042 reviewed with the injected timestamp and hides its button', async () => {
     const { user } = renderApp()
-    const row = screen.getByRole('button', { name: '#1042' }).closest('tr') as HTMLElement
+    const row = screen.getByRole('link', { name: '#1042' }).closest('tr') as HTMLElement
     await user.click(within(row).getByRole('button', { name: 'Mark reviewed' }))
     expect(orderButtons()).not.toContain('#1042')
-    await user.click(screen.getByRole('button', { name: 'Reviewed' }))
+    await user.click(screen.getByRole('link', { name: /^Reviewed \(\d+\)$/ }))
     expect(orderButtons()).toEqual(['#1042'])
-    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
+    expect(screen.getByText('2026-11-20 12:05 UTC')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Mark reviewed' })).toBeNull()
   })
 
   it('keeps one row per order and the same views and timestamps on re-run', async () => {
     const { user } = renderApp()
     await user.click(
-      within(screen.getByRole('button', { name: '#1042' }).closest('tr') as HTMLElement).getByRole(
+      within(screen.getByRole('link', { name: '#1042' }).closest('tr') as HTMLElement).getByRole(
         'button',
         { name: 'Mark reviewed' },
       ),
@@ -98,20 +116,19 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Re-run evaluation' }))
     expect(orderButtons()).toEqual(openBefore)
     expect(new Set(orderButtons()).size).toBe(orderButtons().length)
-    await user.click(screen.getByRole('button', { name: 'Reviewed' }))
+    await user.click(screen.getByRole('link', { name: /^Reviewed \(\d+\)$/ }))
     expect(orderButtons()).toEqual(['#1042'])
-    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
+    expect(screen.getByText('2026-11-20 12:05 UTC')).toBeTruthy()
   })
 
-  it('opens the skipped list from the summary', async () => {
+  it('shows the skipped records on the Data quality page', async () => {
     const { user } = renderApp()
-    expect(screen.queryByRole('region', { name: 'Skipped records' })).toBeNull()
-    await user.click(screen.getByRole('button', { name: '5 skipped' }))
-    const list = screen.getByRole('region', { name: 'Skipped records' })
-    expect(within(list).getByText('#1053')).toBeTruthy()
-    expect(within(list).getByText('Missing paymentTimestamp')).toBeTruthy()
-    await user.click(within(list).getByRole('button', { name: 'Close' }))
-    expect(screen.queryByRole('region', { name: 'Skipped records' })).toBeNull()
+    expect(screen.queryByText('Missing paymentTimestamp')).toBeNull()
+    await user.click(screen.getByRole('link', { name: 'Data quality' }))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Data quality')
+    expect(screen.getByText('#1053')).toBeTruthy()
+    expect(screen.getByText('Missing paymentTimestamp')).toBeTruthy()
+    expect(screen.getByText('17 checked, 5 skipped')).toBeTruthy()
   })
 
   it('writes the review to the single storage key', async () => {
@@ -122,7 +139,7 @@ describe('App', () => {
 })
 
 async function markReviewed(user: ReturnType<typeof userEvent.setup>, id: string) {
-  const row = screen.getByRole('button', { name: id }).closest('tr') as HTMLElement
+  const row = screen.getByRole('link', { name: id }).closest('tr') as HTMLElement
   await user.click(within(row).getByRole('button', { name: 'Mark reviewed' }))
 }
 
@@ -135,9 +152,9 @@ describe('App: remaining behavior', () => {
 
     const second = renderApp(storage)
     expect(orderButtons()).not.toContain('#1042')
-    await second.user.click(screen.getByRole('button', { name: 'Reviewed' }))
+    await second.user.click(screen.getByRole('link', { name: /^Reviewed \(\d+\)$/ }))
     expect(orderButtons()).toEqual(['#1042'])
-    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
+    expect(screen.getByText('2026-11-20 12:05 UTC')).toBeTruthy()
   })
 
   it.each([
@@ -174,7 +191,7 @@ describe('App: remaining behavior', () => {
     )
     expect(orderButtons()).toContain('#1042')
     // The app stays usable.
-    await user.click(screen.getByRole('button', { name: '#1043' }))
+    await user.click(screen.getByRole('link', { name: '#1043' }))
     expect(screen.getByText('24 h 0 min')).toBeTruthy()
   })
 
@@ -208,15 +225,15 @@ describe('App: remaining behavior', () => {
     )
     const stale = renderApp(storage, fulfilled)
     expect(orderButtons()).not.toContain('#1042')
-    await stale.user.click(screen.getByRole('button', { name: 'Reviewed' }))
+    await stale.user.click(screen.getByRole('link', { name: /^Reviewed \(\d+\)$/ }))
     expect(screen.getByRole('status').textContent).toBe('No reviewed orders yet.')
     expect(storage.data.get(REVIEW_STORAGE_KEY)).toBe(savedBefore)
     stale.unmount()
 
     const again = renderApp(storage)
-    await again.user.click(screen.getByRole('button', { name: 'Reviewed' }))
+    await again.user.click(screen.getByRole('link', { name: /^Reviewed \(\d+\)$/ }))
     expect(orderButtons()).toEqual(['#1042'])
-    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
+    expect(screen.getByText('2026-11-20 12:05 UTC')).toBeTruthy()
   })
 
   it('handles an empty dataset', () => {
@@ -231,7 +248,8 @@ describe('App: remaining behavior', () => {
     const openSpy = vi.spyOn(XMLHttpRequest.prototype, 'open')
     const sendSpy = vi.spyOn(XMLHttpRequest.prototype, 'send')
     const { user } = renderApp()
-    await user.click(screen.getByRole('button', { name: '#1042' }))
+    await user.click(screen.getByRole('link', { name: '#1042' }))
+    await user.click(screen.getByRole('link', { name: /Back to queue/ }))
     await markReviewed(user, '#1042')
     await user.click(screen.getByRole('button', { name: 'Re-run evaluation' }))
     expect(fetchSpy).not.toHaveBeenCalled()
@@ -258,7 +276,16 @@ describe('App: remaining behavior', () => {
     expect(DATASET).toEqual(before)
   })
 
-  it('supports selecting a row and marking it reviewed with the keyboard only', async () => {
+  it('marks an order reviewed from its order page', async () => {
+    const { user } = renderApp(new FakeStorage(), DATASET, '/orders/1042')
+    await user.click(screen.getByRole('button', { name: 'Mark reviewed' }))
+    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Mark reviewed' })).toBeNull()
+    await user.click(screen.getByRole('link', { name: /Back to queue/ }))
+    expect(orderButtons()).not.toContain('#1042')
+  })
+
+  it('supports opening an order and marking it reviewed with the keyboard only', async () => {
     const { user } = renderApp()
     for (let i = 0; i < 30; i++) {
       await user.tab()
@@ -267,9 +294,12 @@ describe('App: remaining behavior', () => {
     expect(document.activeElement?.textContent).toBe('#1042')
     await user.keyboard('{Enter}')
     expect(screen.getByText('0 of 2 units fulfilled')).toBeTruthy()
-    await user.tab()
+    for (let i = 0; i < 10; i++) {
+      await user.tab()
+      if (document.activeElement?.textContent === 'Mark reviewed') break
+    }
     expect(document.activeElement?.textContent).toBe('Mark reviewed')
     await user.keyboard('{Enter}')
-    expect(orderButtons()).not.toContain('#1042')
+    expect(screen.getByText('Reviewed 2026-11-20 12:05 UTC')).toBeTruthy()
   })
 })

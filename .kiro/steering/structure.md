@@ -4,7 +4,16 @@
 ```
 fulfillment-watch/
 ├── .kiro/steering/        # product.md, tech.md, structure.md, ui-style.md
-├── docs/                  # brd-stalled-order.md, brd-ui-redesign.md, screenshots/
+├── docs/                  # brd-stalled-order.md, brd-ui-redesign.md, brd-stalled-orders-aws.md,
+│                          # aws-notes.md, cost-estimate.md, scope-verification.md, screenshots/
+├── server/                # Lambda code (imports ../src/rules, ../src/data and ../src/config.ts unchanged)
+│   ├── handler.ts         # Lambda entry: real clock, process.env, DynamoDB client
+│   ├── handleRequest.ts   # pure router, GET /queue, POST /reviews
+│   ├── claims.ts, runtimeConfig.ts, responses.ts
+│   ├── reviewStore.ts, dynamoClient.ts   # ReviewStore, DynamoLike and the production adapter
+│   └── properties/        # one property test per file
+├── infra/                 # CDK app: bin/app.ts, lib/stack.ts, stack.test.ts (cdk.json is at the repo root)
+├── scripts/               # verify-deployed-api.mjs (operator-run, needs a deployed stack)
 ├── public/                # static assets (favicon.svg, icons.svg)
 ├── src/
 │   ├── main.tsx           # React entry point
@@ -17,7 +26,10 @@ fulfillment-watch/
 │   ├── data/orders.ts     # bundled synthetic dataset
 │   ├── rules/             # pure evaluation functions (no React, DOM, or storage)
 │   │   ├── paidUnfulfilled.ts, queue.ts, timestamps.ts, validateOrder.ts
-│   ├── storage/reviews.ts # local storage wrapper for review records
+│   ├── api/               # the only module that makes network calls (API mode only)
+│   │   ├── config.ts, pkce.ts, auth.ts, browserAuth.ts, client.ts, wire.ts, index.ts
+│   ├── storage/           # reviews.ts (unchanged local store), reviewRepository.ts (async interface),
+│   │   │                  # localRepository.ts (wraps reviews.ts), apiRepository.ts (wraps src/api)
 │   ├── pages/             # route-level screens
 │   │   ├── QueuePage.tsx, OrderPage.tsx (+ OrderPage.css), RulePage.tsx,
 │   │   │   DataQualityPage.tsx, NotFoundPage.tsx
@@ -32,14 +44,16 @@ fulfillment-watch/
 │   │   └── tokens.css     # design tokens (see ui-style.md)
 │   └── components/        # shared UI pieces
 │       ├── AgeChip.tsx, StatusChip.tsx, Icon.tsx
-│       ├── Header.tsx, NavBar.tsx, QueueTabs.tsx
+│       ├── Header.tsx (optional Sign out link), NavBar.tsx, QueueTabs.tsx
+│       ├── LoadStatus.tsx, SignInMessage.tsx   # API-mode loading, error and sign-in screens
 │       ├── SummaryCards.tsx, QueueTable.tsx
 │       ├── EvidencePanel.tsx, NextCheckBox.tsx
 │       ├── SkippedGroups.tsx
 │       └── EmptyState.tsx
 ├── index.html
 ├── vite.config.ts
-├── tsconfig.json, tsconfig.app.json, tsconfig.node.json
+├── cdk.json               # CDK app entry (node infra/bin/app.ts)
+├── tsconfig.json, tsconfig.app.json, tsconfig.node.json, tsconfig.server.json
 ├── eslint.config.js
 └── package.json
 ```
@@ -53,5 +67,7 @@ Tests sit next to the code as `*.test.ts(x)`.
 - One component per file. Export components only from `.tsx` files.
 - Keep logic out of components: pure rules in `rules/`, pure view-model code in `view/`, shared state in `state/`.
 - Review records are keyed by `orderId` and `ruleId`.
-- Product docs live in `docs/`. The Stage B brief is planned at `docs/brd-stalled-orders-aws.md` and does not exist yet.
+- Product docs live in `docs/`. The Stage B brief is `docs/brd-stalled-orders-aws.md`.
+- `src/rules`, `src/data` and `src/storage/reviews.ts` are never changed by Stage B. The Lambda imports `src/rules` and `src/data` as they are.
+- `src/api` is the only place that calls `fetch`. Local mode never loads it.
 - Do not edit `node_modules/` or `dist/`. `dist` is ignored by ESLint.
